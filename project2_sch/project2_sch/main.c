@@ -9,6 +9,15 @@
 
 
 typedef struct {
+	int ID;
+	int TOA;
+	int TOS;
+	int Length;
+	int Weight;
+
+}Packet;
+
+typedef struct {
 	char Sadd[16]; //255.255.255.255
 	unsigned short Sport;
 	char Dadd[16]; //255.255.255.255
@@ -18,46 +27,107 @@ typedef struct {
 
 typedef struct
 {
-	long pktID;
-	long Time;
+	long pktID;//stas:should be transfered inside packet
+	long Time;//stas:should be transfered inside packet
 	Flow *flw;
-	int Length;//shuld be 64 - 16384 Bytes - need to changed
+	int Length;//shuld be 64 - 16384 Bytes - need to changed //stas: and transfered inside packet
 	int Weight;
-	int packet;
-	struct Stream *next_stream;
+	Packet *head_packet;
+	Packet *tail_packet;
+	Packet *current_packet;
+	Packet *next_packet;
+	int packets_sent;
+	int packets_waiting;
+	int total_packets_in_stream;
+	//struct Stream *next_stream;
+
 } Stream;
 
 typedef struct {
 	Stream *strm;
+	Stream *Head;
+	Stream *tail;
+	Stream *next_stream;
+	Stream *current_stream;
 	int streams_in_queue;
 	int streams_total;
 	int packets_in_queue;
 	int packets_total;
 }Stream_Queue;
 
+
+Stream *init_packet(Stream *strm) {
+	
+	Packet *pckt = (Packet*)malloc(sizeof(Packet));
+	strm->head_packet = pckt;
+	strm->tail_packet = pckt;
+	strm->next_packet = NULL;
+	return strm;
+}
+Stream *add_packet(Stream *strm, Packet *pckt) {
+	strm->next_packet = pckt;
+	strm->tail_packet = pckt;
+	return strm;
+}
+
 Stream_Queue *Create_queue() {
 
 	Stream_Queue *Sque = (Stream_Queue*)malloc(sizeof(Stream_Queue));
 	Stream *strm = (Stream*)malloc(sizeof(Stream));
 	strm->flw = NULL;
-	strm->next_stream = NULL;
+	Sque->next_stream = NULL;
+	//strm->next_stream = NULL;
 	Sque->strm = strm;
+	Sque->Head = strm;
+	Sque->tail = strm;
 	return Sque;
+}
+Stream *Check_if_flow_exist(Stream_Queue *Sque, Stream *strm) {
+
+	Stream *pointer = Sque->Head;
+	if (pointer == NULL) return NULL;
+	while (pointer != NULL) {
+		if ((strcmp(strm->flw->Dadd, pointer->flw->Dadd) == 0) &&
+			(strm->flw->Dport == pointer->flw->Dport) &&
+			(strcmp(strm->flw->Sadd, pointer->flw->Sadd) == 0) &&
+			(strm->flw->Sport == pointer->flw->Sport))
+			return pointer;
+		else
+			pointer = Sque->next_stream;
+	}
+	return NULL; //return NULL if didnt find a flow
 }
 
 Stream_Queue *Add_Stream_to_queue(Stream_Queue *Sque, Stream *strm) {
 
-
-	Stream *pointer = Sque->strm, *next_stream_pointer = Sque->strm->next_stream;
+	Stream *pointer;
+	pointer = Check_if_flow_exist(Sque, strm); //return Stream object
 	if (pointer == NULL) {
-		Sque->strm = strm;
+		if (Sque->Head == NULL){ //first stream in queue
+			Sque->Head = strm;
+			Sque->tail = strm;
+
 	}
-	Sque->strm = (Stream *)realloc(Sque->strm, sizeof(Stream));
+		else {
+			//Sque->next_stream = strm; //add to the end
+			Sque->tail = strm; // set new end
+			
 
-	pointer = Sque->strm->next_stream;
+		}
+}
+	else { //means we have this flow already, we just add a packet
+			
+		pointer->tail_packet = strm->head_packet;// adds the new packet to the end
 
+	}
 	return Sque;
 }
+
+
+
+
+
+
 
 Flow *init_flow() {
 	Flow *flw = (Flow*)malloc(sizeof(Flow));
@@ -65,7 +135,7 @@ Flow *init_flow() {
 }
 Stream *init_Stream() {
 	Stream *strm = (Stream*)malloc(sizeof(Stream));
-	strm->next_stream = NULL;
+	//strm->next_stream = NULL;
 	return strm;
 }
 
