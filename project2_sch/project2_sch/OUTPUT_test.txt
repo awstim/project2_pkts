@@ -1,12 +1,12 @@
-pktID=0, Time=0, Sadd=192.168.1.1, Sport=2001, Dadd=10.0.0.3, Dport=25, Length=3883, Weight=10|
-pktID=1, Time=0, Sadd=192.168.1.1, Sport=1999, Dadd=10.0.0.3, Dport=25, Length=3658, Weight=10|
-pktID=2, Time=1, Sadd=192.168.1.1, Sport=2001, Dadd=10.0.0.3, Dport=21, Length=13707, Weight=4|
-pktID=3, Time=2, Sadd=192.168.1.1, Sport=2001, Dadd=10.0.0.3, Dport=25, Length=876, Weight=10|
-pktID=4, Time=7, Sadd=192.168.1.1, Sport=1999, Dadd=10.0.0.3, Dport=25, Length=14115, Weight=10|
-pktID=5, Time=12, Sadd=192.168.1.1, Sport=1999, Dadd=10.0.0.3, Dport=25, Length=3411, Weight=10|
-pktID=6, Time=13, Sadd=192.168.1.1, Sport=2001, Dadd=10.0.0.3, Dport=25, Length=9272, Weight=10|
-pktID=7, Time=13, Sadd=192.168.1.1, Sport=2001, Dadd=10.0.0.3, Dport=21, Length=13335, Weight=10|
-pktID=8, Time=14, Sadd=192.168.1.1, Sport=2001, Dadd=10.0.0.3, Dport=25, Length=3454, Weight=10|
-pktID=9, Time=19, Sadd=192.168.1.1, Sport=1999, Dadd=10.0.0.3, Dport=25, Length=14946, Weight=10|
-pktID=10, Time=100, Sadd=10.0.0.3, Sport=21, Dadd=192.168.1.1, Dport=2001, Length=246, Weight=10|
-pktID=11, Time=100, Sadd=10.0.0.3, Sport=21, Dadd=192.168.1.1, Dport=2001, Length=43766, Weight=10|
+0: 0
+3883: 3
+4759: 6
+14031: 8
+17485: 1
+21143: 4
+35258: 5
+38669: 9
+53615: 2
+67322: 7
+80657: 10
+80903: 11
