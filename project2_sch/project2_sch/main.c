@@ -18,7 +18,7 @@ typedef struct {
 	int Weight;
 	struct Stream *nxtstrm; //poineting to the next stream in the current flow
 	char flwname[FLOW_NAME]; //describe the flow name of the packet
-	int delay_time; // sendTime - Time;
+	long delay_time; // sendTime - Time;
 } Stream;
 
 typedef struct {
@@ -30,15 +30,15 @@ typedef struct {
 	int num_of_pckts;
 	//statistics stuff
 	int num_of_pckts_cdf;
-	int maxDelay;
-	float avgDelay; // Total_flow_Delay_time/num_of_pckts
+	long maxDelay;
+	double avgDelay; // Total_flow_Delay_time/num_of_pckts_cdf
 	int maxBuff;//maximum number of waiting packets, should be if(update) every time we add. talk with Elad abput this
-	int buff_cdf;
-	float avgBuff; //num_of_packts/(end_time - initial_time)
-	int Total_flow_Delay_time; // should be updated every time packet is sent, each packet delay should be added. +strm->delay_time
-	int initial_time; //should be updated once upon flow creation
-	int end_time; // should be updated every time we sent packet
-	int head_first;
+	int buff_cdf; // can be cleaned
+	double avgBuff; //num_of_packts/(end_time - initial_time)
+	long Total_flow_Delay_time; // should be updated every time packet is sent, each packet delay should be added. +strm->delay_time
+	long initial_time; //should be updated once upon flow creation
+	long end_time; // should be updated every time we sent packet
+	//int head_first;
 }Flow;
 
 Stream *Create_new_stream(char *line, int wgt)//creating a new stream
@@ -140,7 +140,7 @@ Flow *Stream_into_flow(Stream *strm, Flow *flw_head)//
 				
 				if (flw_ptr->num_of_pckts > flw_ptr->maxBuff) flw_ptr->maxBuff = flw_ptr->num_of_pckts;
 				flw_ptr->num_of_pckts_cdf++;
-				flw_ptr->buff_cdf = flw_ptr->buff_cdf + flw_ptr->num_of_pckts;//flw_ptr->num_of_pckts;
+				//flw_ptr->buff_cdf = flw_ptr->buff_cdf + flw_ptr->num_of_pckts;//flw_ptr->num_of_pckts;
 
 				strm->Weight = flw_ptr->Weight;
 				return flw_head;
@@ -155,7 +155,7 @@ Flow *Stream_into_flow(Stream *strm, Flow *flw_head)//
 			//for statistics:
 			if (flw_ptr->num_of_pckts > flw_ptr->maxBuff) flw_ptr->maxBuff = flw_ptr->num_of_pckts;
 			flw_ptr->num_of_pckts_cdf++;
-			flw_ptr->buff_cdf = flw_ptr->buff_cdf + flw_ptr->num_of_pckts;
+			//flw_ptr->buff_cdf = flw_ptr->buff_cdf + flw_ptr->num_of_pckts;
 
 			strm->Weight = flw_ptr->Weight;
 			return flw_head;
@@ -221,20 +221,24 @@ Flow *WRR_ALGO(Flow *flw_head, Flow *crt_flw, long *ptr_ToTtime, FILE *fp2)
 		fprintf(fp2, "%ld: %d\n", *ptr_ToTtime, strm_ptr->pktID);//in this line we write to file the ID of releasing pckts
 		printf("%ld: %d\n", *ptr_ToTtime, strm_ptr->pktID);//in this line we print to cmd the ID of releasing pckts
 		*ptr_ToTtime += strm_ptr->Length;
+		
+		
 		//for debugigng
-		if (crt_flw->num_of_pckts > crt_flw->maxBuff) crt_flw->maxBuff = crt_flw->num_of_pckts;
+		/*
 		int a, b, c;
 		a = *ptr_ToTtime;
 		b = strm_ptr->Length;
 		c = strm_ptr->Time;
 		printf("%d- %d -%d = %d\n", a, b, c, a - b - c);
 		//
-
+		*/
+		//for statistics:
+		if (crt_flw->num_of_pckts > crt_flw->maxBuff) crt_flw->maxBuff = crt_flw->num_of_pckts;
 		strm_ptr->delay_time = *(ptr_ToTtime) - (strm_ptr->Length) - (strm_ptr->Time);//the delay time is only the time the packet is wating to be sent
 		crt_flw->Total_flow_Delay_time = crt_flw->Total_flow_Delay_time + strm_ptr->delay_time; //add to total delay time.
 		if (strm_ptr->delay_time > crt_flw->maxDelay) crt_flw->maxDelay = strm_ptr->delay_time;//update max delay time
 		crt_flw->end_time = *ptr_ToTtime;
-		//for statistics:
+		
 		crt_flw->num_of_pckts--;//how many pckts left in flow
 		crt_flw->Weight_ctr--;// how many pckst still allowd to send
 		crt_flw->flwstrm = strm_ptr->nxtstrm;
@@ -300,7 +304,7 @@ int main()
 	FILE *fp1, *fp2, *fp3;
 	Flow *flw_head = NULL, *crt_flw = NULL;
 	Stream *strm = NULL;
-	char line[MAX_LINE], algo[] = "WRR", input_file[100] = "3_WRR_w1_in", output_file[100] = { '\0' }, statistics_file[100] = { '\0' };
+	char line[MAX_LINE], algo[] = "WRR", input_file[100] = "1_WRR_w1_in", output_file[100] = { '\0' }, statistics_file[100] = { '\0' };
 	long crt_Time = 0, cnt = 0, ToTtime = 0, *ptr_ToTtime;
 	int flag1 = 0, wgt = 1;
 
@@ -375,11 +379,12 @@ int main()
 
 	while (crt_flw!=NULL)
 	{
-		crt_flw->avgDelay = (float)crt_flw->Total_flow_Delay_time / (float)crt_flw->num_of_pckts_cdf;
-		//crt_flw->avgBuff = (float)crt_flw->buff_cdf/(float)(crt_flw->end_time - crt_flw->initial_time) ;
-		crt_flw->avgBuff = ((float)crt_flw->Total_flow_Delay_time/(float)total_time);
+		crt_flw->avgDelay = (double)crt_flw->Total_flow_Delay_time / (double)crt_flw->num_of_pckts_cdf;
+		 
+		crt_flw->avgBuff = ((double)crt_flw->Total_flow_Delay_time/(double)total_time);
+		/**
 		crt_flw->avgBuff = crt_flw->avgBuff * 1000;
-		//float a = (int)(crt_flw->avgBuff) %10;
+		//double a = (int)(crt_flw->avgBuff) %10;
 		crt_flw->avgDelay = crt_flw->avgDelay * 1000;
 		if ((int)(crt_flw->avgBuff) % 10 > 5) {
 			crt_flw->avgBuff++;
@@ -387,11 +392,12 @@ int main()
 		if ((int)(crt_flw->avgDelay) % 10 > 5) {
 			crt_flw->avgDelay++;
 		}
-		crt_flw->avgBuff = (float)crt_flw->avgBuff / 1000;
-		//float a = (int)(crt_flw->avgBuff) %10;
-		crt_flw->avgDelay = (float)crt_flw->avgDelay / 1000;
-		fprintf(fp3, "%s %d %d %.2f %d %.2f\n", crt_flw->flwname, crt_flw->num_of_pckts_cdf, crt_flw->maxDelay, crt_flw->avgDelay, crt_flw->maxBuff, crt_flw->avgBuff);//in this line we write to file the ID of releasing pckts
-		printf("%s %d %d %.2f %d %.2f\n", crt_flw->flwname, crt_flw->num_of_pckts_cdf, crt_flw->maxDelay, crt_flw->avgDelay, crt_flw->maxBuff, crt_flw->avgBuff);//in this line we write to file the ID of releasing pckts
+		crt_flw->avgBuff = (double)crt_flw->avgBuff / 1000;
+		//double a = (int)(crt_flw->avgBuff) %10;
+		crt_flw->avgDelay = (double)crt_flw->avgDelay / 1000;
+		*/
+		fprintf(fp3, "%s %d %d %.3f %d %.3f\n", crt_flw->flwname, crt_flw->num_of_pckts_cdf, crt_flw->maxDelay, crt_flw->avgDelay, crt_flw->maxBuff, crt_flw->avgBuff);//in this line we write to file the ID of releasing pckts
+		printf("%s %d %d %.3f %d %.3f\n", crt_flw->flwname, crt_flw->num_of_pckts_cdf, crt_flw->maxDelay, crt_flw->avgDelay, crt_flw->maxBuff, crt_flw->avgBuff);//in this line we write to file the ID of releasing pckts
 		//printf("%s %d\n", crt_flw->flwname);
 		crt_flw = crt_flw->nxtflw;
 		//printf("%ld: %d\n", *ptr_ToTtime, strm_ptr->pktID);//in this line we print to cmd the ID of releasing pckts
